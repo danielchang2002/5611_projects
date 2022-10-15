@@ -12,14 +12,17 @@ void setup() {
 int rows = 10;
 int cols = 10;
 int radius = 5;
-float rest_len = 40;
+float rest_len = 80;
 float k_s = 2000; // spring constant
 float k_d = 0; // damping constant
-float gravity = 40;
+float gravity = 20;
 float startX = 100;
-float startY = 100;
+float startY = 200;
 float startZ = 0;
 float dist_between_nodes = rest_len;
+Vec3 obstaclePosition = new Vec3(200, 500, -750);
+float obstacleRadius = 100;
+float COR = 0.8;
 
 Vec3[][] pos = new Vec3[rows][cols];
 Vec3[][] vel = new Vec3[rows][cols];
@@ -38,12 +41,10 @@ void initScene(){
       pos[i][j] = new Vec3(
         startX + i * dist_between_nodes,
         startY,
-        startZ - j * dist_between_nodes
+        startZ - j * 2 * dist_between_nodes
         );
-      print(pos[i][j], "");
       vel[i][j] = new Vec3(0, 0, 0);
     }
-    println();
   }
 }
 
@@ -99,6 +100,33 @@ void update(float dt){
     new_vel[0][i].z = 0;
   }
 
+
+  vel = new_vel;
+  update_pos(dt);
+
+  // intialize new velocity matrix
+  new_vel = new Vec3[rows][cols];
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+      new_vel[i][j] = new Vec3(0, 0, 0);
+    }
+  }
+
+  // collision detection
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+      float d = obstaclePosition.minus(pos[i][j]).length();
+
+      if (d < obstacleRadius + radius) {
+        Vec3 n = pos[i][j].minus(obstaclePosition);
+        Vec3 norm = n.normalized();
+        Vec3 bounce = norm.times(dot(vel[i][j], norm));
+        new_vel[i][j].subtract(bounce.times(1 + COR));
+        pos[i][j].add(norm.times(10 + obstacleRadius - d));
+      }
+    }
+  }
+
   vel = new_vel;
   update_pos(dt);
 }
@@ -134,7 +162,7 @@ void draw() {
       update(1/(20 * frameRate));
     }
   }
-  fill(0,0,0);
+  // fill(0,0,0);
 
   // draw cloth
   for (int i = 0 ; i < rows; i++) {
@@ -164,6 +192,15 @@ void draw() {
       popMatrix();
     }
   }
+
+  // draw obstacle
+  pushMatrix();
+  translate(obstaclePosition.x, obstaclePosition.y, obstaclePosition.z);
+  // noStroke();
+  lights();
+  sphere(obstacleRadius);
+  popMatrix();
+
   if (paused)
     surface.setTitle(WINDOW_TITLE + " [PAUSED]");
   else

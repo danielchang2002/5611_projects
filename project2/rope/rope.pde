@@ -43,6 +43,9 @@ float restLen = 10;
 float mass = 1.0; //TRY-IT: How does changing mass affect resting length of the rope?
 float k = 200; //TRY-IT: How does changing k affect resting length of the rope?
 float kv = 30; //TRY-IT: How big can you make kv?
+Vec2 obstaclePosition = new Vec2(100, 300);
+float obstacleRadius = 50;
+float COR = 0.8;
 
 //Initial positions and velocities of masses
 static int maxNodes = 100;
@@ -54,8 +57,8 @@ int numNodes = 10;
 
 void initScene(){
   for (int i = 0; i < numNodes; i++){
-    pos[i] = new Vec2(0,0);
-    pos[i].x = stringTop.x;
+    pos[i] = new Vec2(0, 0);
+    pos[i].x = stringTop.x + i * 10;
     pos[i].y = stringTop.y + 8*i; //Make each node a little lower
     vel[i] = new Vec2(0,0);
   }
@@ -92,11 +95,25 @@ void update(float dt){
     pos[i].add(vel[i].times(dt));
   }
   
-  //Collision detection and response
+  // Collision detection and response
   for (int i = 0; i < numNodes; i++){
     if (pos[i].y+radius > floor){
       vel[i].y *= -.9;
       pos[i].y = floor - radius;
+    }
+  }
+
+  // Collision detection and response (obstacle)
+  for (int i = 0; i < numNodes; i++){
+    Vec2 dist = pos[i].minus(obstaclePosition);
+    if (dist.length() < radius + obstacleRadius + 0.05) {
+      Vec2 normal = dist.normalized();
+      // bring sphere back to position
+      pos[i] = obstaclePosition.plus(normal.times(obstacleRadius + radius)).times(1.01);
+
+      // apply bounce
+      Vec2 bounce = normal.times(dot(vel[i], normal));
+      vel[i] = vel[i].minus(bounce.times(1 + COR));
     }
   }
   
@@ -106,7 +123,11 @@ void update(float dt){
 boolean paused = true;
 void draw() {
   background(255,255,255);
-  if (!paused) update(1/(20*frameRate));
+  if (!paused) {
+    for (int i = 0; i < 40; i++) {
+      update(1/(10 * frameRate));
+    }
+  }
   fill(0,0,0);
   
   for (int i = 0; i < numNodes-1; i++){
@@ -116,6 +137,12 @@ void draw() {
     sphere(radius);
     popMatrix();
   }
+
+  // draw obstacle
+  pushMatrix();
+  translate(obstaclePosition.x, obstaclePosition.y);
+  sphere(obstacleRadius);
+  popMatrix();
   
   if (paused)
     surface.setTitle(windowTitle + " [PAUSED]");
@@ -126,105 +153,4 @@ void draw() {
 void keyPressed(){
   if (key == ' ')
     paused = !paused;
-}
-
-
-///////////////////
-// Vec2D Library
-///////////////////
-
-public class Vec2 {
-  public float x, y;
-  
-  public Vec2(float x, float y){
-    this.x = x;
-    this.y = y;
-  }
-  
-  public String toString(){
-    return "(" + x+ ", " + y +")";
-  }
-  
-  public float length(){
-    return sqrt(x*x+y*y);
-  }
-  
-  public float lengthSqr(){
-    return x*x+y*y;
-  }
-  
-  public Vec2 plus(Vec2 rhs){
-    return new Vec2(x+rhs.x, y+rhs.y);
-  }
-  
-  public void add(Vec2 rhs){
-    x += rhs.x;
-    y += rhs.y;
-  }
-  
-  public Vec2 minus(Vec2 rhs){
-    return new Vec2(x-rhs.x, y-rhs.y);
-  }
-  
-  public void subtract(Vec2 rhs){
-    x -= rhs.x;
-    y -= rhs.y;
-  }
-  
-  public Vec2 times(float rhs){
-    return new Vec2(x*rhs, y*rhs);
-  }
-  
-  public void mul(float rhs){
-    x *= rhs;
-    y *= rhs;
-  }
-  
-  public void normalize(){
-    float magnitude = sqrt(x*x + y*y);
-    x /= magnitude;
-    y /= magnitude;
-  }
-  
-  public Vec2 normalized(){
-    float magnitude = sqrt(x*x + y*y);
-    return new Vec2(x/magnitude, y/magnitude);
-  }
-  
-  public void clampToLength(float maxL){
-    float magnitude = sqrt(x*x + y*y);
-    if (magnitude > maxL){
-      x *= maxL/magnitude;
-      y *= maxL/magnitude;
-    }
-  }
-  
-  public void setToLength(float newL){
-    float magnitude = sqrt(x*x + y*y);
-    x *= newL/magnitude;
-    y *= newL/magnitude;
-  }
-  
-  public float distanceTo(Vec2 rhs){
-    float dx = rhs.x - x;
-    float dy = rhs.y - y;
-    return sqrt(dx*dx + dy*dy);
-  }
-  
-}
-
-Vec2 interpolate(Vec2 a, Vec2 b, float t){
-  return a.plus((b.minus(a)).times(t));
-}
-
-float interpolate(float a, float b, float t){
-  return a + ((b-a)*t);
-}
-
-float dot(Vec2 a, Vec2 b){
-  return a.x*b.x + a.y*b.y;
-}
-
-Vec2 projAB(Vec2 a, Vec2 b){
-  return b.times(a.x*b.x + a.y*b.y);
 }

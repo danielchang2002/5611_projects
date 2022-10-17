@@ -12,49 +12,61 @@ void setup() {
 int rows = 10;
 int cols = 10;
 int radius = 5;
-float rest_len = 80;
-float k_s = 2000; // spring constant
-float k_d = 0; // damping constant
-float gravity = 20;
+float rest_len = 100;
+float k_s = 100; // spring constant
+float k_d = 50; // damping constant
+float friction = 0.5;
 float startX = 100;
 float startY = 200;
 float startZ = 0;
+float xRotation = -PI/5;
+float addXRotation = 0;
+float yRotation = 0;
+float addYRotation = 0;
+float cameraTransX = -50;
+float cameraTransY = -50;
+float cameraTransZ = -50;
 float dist_between_nodes = rest_len;
-Vec3 obstaclePosition = new Vec3(200, 500, -750);
-float obstacleRadius = 100;
-float COR = 0.8;
+Vec3 obstaclePosition = new Vec3(200, 600, -300);
+Vec3 obstacleVelocity = new Vec3(0, 0, 0);
+float obstacleRadius = 200;
+float COR = 0;
+float gravity = 200;
+int dragIdx = -1;
+boolean dragging = false;
+boolean dragCamera = false;
+float clickX = -1;
+float clickY = -1;
 
 Vec3[][] pos = new Vec3[rows][cols];
 Vec3[][] vel = new Vec3[rows][cols];
+Vec3[][] acc = new Vec3[rows][cols];
 
 void initScene(){
-
-  // rotate camera
-  beginCamera();
-  camera();
-  rotateX(-PI/5);
-  // rotateY(PI/12);
-  endCamera();
 
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
       pos[i][j] = new Vec3(
         startX + i * dist_between_nodes,
         startY,
-        startZ - j * 2 * dist_between_nodes
+        startZ - j * dist_between_nodes
         );
       vel[i][j] = new Vec3(0, 0, 0);
+      acc[i][j] = new Vec3(0, 0, 0);
     }
   }
 }
 
 void update(float dt){
+  // update obstacle position
+  obstaclePosition.add(obstacleVelocity.times(dt));
 
-  // intialize new velocity matrix
-  Vec3[][] new_vel = new Vec3[rows][cols];
+  // reset acceleration
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
-      new_vel[i][j] = new Vec3(0, 0, 0);
+      acc[i][j].x = 0;
+      acc[i][j].y = gravity;
+      acc[i][j].z = 0;
     }
   }
   
@@ -67,8 +79,8 @@ void update(float dt){
       float v1 = dot(displacement_dir, vel[i][j]);
       float v2 = dot(displacement_dir, vel[i][j + 1]);
       float f = -k_s * (rest_len - distance) - k_d * (v1 - v2);
-      new_vel[i][j].add(displacement_dir.times(f * dt));
-      new_vel[i][j + 1].subtract(displacement_dir.times(f * dt));
+      acc[i][j].add(displacement_dir.times(f));
+      acc[i][j + 1].subtract(displacement_dir.times(f));
     }
   }
 
@@ -81,38 +93,29 @@ void update(float dt){
       float v1 = dot(displacement_dir, vel[i][j]);
       float v2 = dot(displacement_dir, vel[i + 1][j]);
       float f = -k_s * (rest_len - distance) - k_d * (v1 - v2);
-      new_vel[i][j].add(displacement_dir.times(f * dt));
-      new_vel[i + 1][j].subtract(displacement_dir.times(f * dt));
-    }
-  }
-
-  // apply gravity
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < cols; j++) {
-      new_vel[i][j].y += gravity;
+      acc[i][j].add(displacement_dir.times(f));
+      acc[i + 1][j].subtract(displacement_dir.times(f));
     }
   }
 
   // fix top
   for (int i = 0; i < cols; i++) {
-    new_vel[0][i].x = 0;
-    new_vel[0][i].y = 0;
-    new_vel[0][i].z = 0;
+    acc[0][i].x = 0;
+    acc[0][i].y = 0;
+    acc[0][i].z = 0;
   }
 
-
-  vel = new_vel;
-  update_pos(dt);
-
-  // intialize new velocity matrix
-  new_vel = new Vec3[rows][cols];
+  // eulerian integration
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
-      new_vel[i][j] = new Vec3(0, 0, 0);
+      // add "friction"
+      acc[i][j].subtract(vel[i][j].times(friction));
+      vel[i][j].add(acc[i][j].times(dt));
+      pos[i][j].add(vel[i][j].times(dt));
     }
   }
 
-  // collision detection
+  // collision detection and response
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
       float d = obstaclePosition.minus(pos[i][j]).length();
@@ -121,14 +124,20 @@ void update(float dt){
         Vec3 n = pos[i][j].minus(obstaclePosition);
         Vec3 norm = n.normalized();
         Vec3 bounce = norm.times(dot(vel[i][j], norm));
-        new_vel[i][j].subtract(bounce.times(1 + COR));
-        pos[i][j].add(norm.times(10 + obstacleRadius - d));
+        vel[i][j].subtract(bounce.times(1 + COR));
+        pos[i][j] = obstaclePosition.plus(norm.times(obstacleRadius + radius)).times(1.01);
       }
     }
   }
 
-  vel = new_vel;
-  update_pos(dt);
+  // drag point
+  if (dragging) {
+    int row = dragIdx / cols;
+    int col = dragIdx % cols;
+    pos[row][col].x = mouseX;
+    pos[row][col].y = mouseY;
+  }
+  
 }
 
 void print_vel() {
@@ -145,20 +154,27 @@ void print_vel() {
   println();
   println();
 }
-
-void update_pos(float dt) {
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < cols; j++) {
-      pos[i][j].add(vel[i][j].times(dt));
-    }
-  }
-}
-
 boolean paused = true;
+
 void draw() {
+
+  // update rotation angles based on mouse
+  if (dragCamera) {
+    addXRotation = ((mouseY - clickY) / HEIGHT) * PI;
+    addYRotation = ((mouseX - clickX) / WIDTH) * PI;
+  }
+
+  // rotate camera
+  beginCamera();
+  camera();
+  translate(cameraTransX, cameraTransY, cameraTransZ);
+  rotateX(xRotation + addXRotation);
+  rotateY(yRotation + addYRotation);
+  endCamera();
+
   background(255,255,255);
   if (!paused) {
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 40; i++) {
       update(1/(20 * frameRate));
     }
   }
@@ -196,7 +212,6 @@ void draw() {
   // draw obstacle
   pushMatrix();
   translate(obstaclePosition.x, obstaclePosition.y, obstaclePosition.z);
-  // noStroke();
   lights();
   sphere(obstacleRadius);
   popMatrix();
@@ -208,8 +223,93 @@ void draw() {
 }
 
 void keyPressed(){
-  if (key == ' ')
+  if (key == ' ') {
     paused = !paused;
-  if (key == 'r')
+  }
+  if (key == 'r') {
     initScene();
+  }
+  if (key == 'w') {
+    obstacleVelocity.z -= 100;
+  }
+  if (key == 'a') {
+    obstacleVelocity.x -= 100;
+  }
+  if (key == 's') {
+    obstacleVelocity.z += 100;
+  }
+  if (key == 'd') {
+    obstacleVelocity.x += 100;
+  }
+  if (key == 'j') {
+    obstacleVelocity.y += 100;
+  }
+  if (key == 'k') {
+    obstacleVelocity.y -= 100;
+  }
+}
+
+void keyReleased() {
+  if (key == 'w') {
+    obstacleVelocity.z = 0;
+  }
+  if (key == 'a') {
+    obstacleVelocity.x = 0;
+  }
+  if (key == 's') {
+    obstacleVelocity.z = 0;
+  }
+  if (key == 'd') {
+    obstacleVelocity.x = 0;
+  }
+  if (key == 'j') {
+    obstacleVelocity.y = 0;
+  }
+  if (key == 'k') {
+    obstacleVelocity.y = 0;
+  }
+  if (key == 'x') {
+    cameraTransX += 50;
+  }
+  if (key == 'y') {
+    cameraTransY += 50;
+  }
+  if (key == 'z') {
+    cameraTransZ += 50;
+  }
+  if (key == 'b') {
+    cameraTransX -= 50;
+  }
+  if (key == 'n') {
+    cameraTransY -= 50;
+  }
+  if (key == 'm') {
+    cameraTransZ -= 50;
+  }
+  println(cameraTransX, cameraTransY, cameraTransZ);
+}
+
+void mousePressed() {
+  dragCamera = true;
+  clickX = mouseX;
+  clickY = mouseY;
+
+  // float thresh = 10;
+  // for (int i = 0; i < rows; i++) {
+  //   for (int j = 0; j < cols; j++) {
+  //     if (abs(mouseX - pos[i][j].x) < thresh && abs(mouseY - pos[i][j].y) < thresh) {
+  //       dragIdx = i * cols + j;
+  //       dragging = true;
+  //       break;
+  //     }
+  //   }
+  // }
+}
+
+void mouseReleased() {
+  dragCamera = false;
+  xRotation = xRotation + addXRotation;
+  addXRotation = 0;
+  yRotation = yRotation + addYRotation;
+  addYRotation = 0;
 }

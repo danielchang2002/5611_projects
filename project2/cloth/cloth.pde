@@ -1,11 +1,12 @@
 // set constants
 String WINDOW_TITLE = "Swinging cloth";
-int WIDTH = 800;
+int WIDTH = 1200;
 int HEIGHT = 1000;
 
 void setup() {
-  size(800, 1000, P3D);
+  size(1200, 1000, P3D);
   surface.setTitle(WINDOW_TITLE);
+  noStroke();
   initScene();
 }
 
@@ -14,29 +15,17 @@ int cols = 10;
 int radius = 5;
 float rest_len = 100;
 float k_s = 100; // spring constant
-float k_d = 50; // damping constant
+float k_d = 80; // damping constant
 float friction = 0.5;
 float startX = 100;
 float startY = 200;
 float startZ = 0;
-float xRotation = -PI/5;
-float addXRotation = 0;
-float yRotation = 0;
-float addYRotation = 0;
-float cameraTransX = -50;
-float cameraTransY = -50;
-float cameraTransZ = -50;
 float dist_between_nodes = rest_len;
 Vec3 obstaclePosition = new Vec3(200, 600, -300);
 Vec3 obstacleVelocity = new Vec3(0, 0, 0);
 float obstacleRadius = 200;
-float COR = 0;
-float gravity = 200;
-int dragIdx = -1;
-boolean dragging = false;
-boolean dragCamera = false;
-float clickX = -1;
-float clickY = -1;
+float COR = 0.8;
+float gravity = 400;
 
 Vec3[][] pos = new Vec3[rows][cols];
 Vec3[][] vel = new Vec3[rows][cols];
@@ -55,6 +44,10 @@ void initScene(){
       acc[i][j] = new Vec3(0, 0, 0);
     }
   }
+
+  Vec3 middle = pos[0][cols / 2];
+  lookLocation = new Vec3(middle.x, middle.y + 500, middle.z);
+  updateCameraPosition();
 }
 
 void update(float dt){
@@ -111,6 +104,7 @@ void update(float dt){
       // add "friction"
       acc[i][j].subtract(vel[i][j].times(friction));
       vel[i][j].add(acc[i][j].times(dt));
+
       pos[i][j].add(vel[i][j].times(dt));
     }
   }
@@ -129,90 +123,77 @@ void update(float dt){
       }
     }
   }
-
-  // drag point
-  if (dragging) {
-    int row = dragIdx / cols;
-    int col = dragIdx % cols;
-    pos[row][col].x = mouseX;
-    pos[row][col].y = mouseY;
-  }
-  
 }
 
-void print_vel() {
-  println();
-  println();
-  println();
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < cols; j++) {
-      print(vel[i][j], "");
-    }
-    println();
-  }
-  println();
-  println();
-  println();
-}
 boolean paused = true;
 
 void draw() {
-
-  // update rotation angles based on mouse
   if (dragCamera) {
-    addXRotation = ((mouseY - clickY) / HEIGHT) * PI;
-    addYRotation = ((mouseX - clickX) / WIDTH) * PI;
+    phi = oldPhi + ((mouseY - clickY) / HEIGHT) * PI / 2;
+    theta = oldTheta + ((mouseX - clickX) / WIDTH) * PI / 2;
+    updateCameraPosition();
   }
 
-  // rotate camera
-  beginCamera();
-  camera();
-  translate(cameraTransX, cameraTransY, cameraTransZ);
-  rotateX(xRotation + addXRotation);
-  rotateY(yRotation + addYRotation);
-  endCamera();
+  camera(
+    cameraLocation.x, cameraLocation.y, cameraLocation.z, 
+    lookLocation.x, lookLocation.y, lookLocation.z,
+    0, 1, 0
+  );
 
   background(255,255,255);
+
   if (!paused) {
     for (int i = 0; i < 40; i++) {
       update(1/(20 * frameRate));
     }
   }
-  // fill(0,0,0);
+
+  directionalLight(150, 250, 150, -40, 120, -200);
+
+
 
   // draw cloth
   for (int i = 0 ; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
-      pushMatrix();
 
-      // draw line from top
-      if (i != 0) {
-        line(
-          pos[i - 1][j].x, pos[i - 1][j].y, pos[i - 1][j].z,
-          pos[i][j].x, pos[i][j].y, pos[i][j].z
-        );
+      if (i != rows - 1 && j != cols - 1) {
+
+        Vec3 topLeft = pos[i][j];
+        Vec3 topRight = pos[i][j + 1];
+        Vec3 botLeft = pos[i + 1][j];
+        Vec3 botRight = pos[i + 1][j + 1];
+
+        
+        pushMatrix();
+        beginShape();
+        fill(0, 255, 255 * (abs(pos[i][j].minus(pos[i][j + 1]).length() - rest_len) / (rest_len * 0.5)));
+
+        Vec3 topLeftNormal = getNormal(i, j);
+        normal(topLeftNormal.x, topLeftNormal.y, topLeftNormal.z);
+        vertex(topLeft.x, topLeft.y, topLeft.z, 0, 0);
+
+        Vec3 topRightNormal = getNormal(i, j + 1);
+        normal(topRightNormal.x, topRightNormal.y, topRightNormal.z);
+        vertex(topRight.x, topRight.y, topRight.z, img.width, 0);
+
+        Vec3 botRightNormal = getNormal(i + 1, j + 1);
+        normal(botRightNormal.x, botRightNormal.y, botRightNormal.z);
+        vertex(botRight.x, botRight.y, botRight.z, img.width, img.height);
+
+        Vec3 botLeftNormal = getNormal(i + 1, j);
+        normal(botLeftNormal.x, botLeftNormal.y, botLeftNormal.z);
+        vertex(botLeft.x, botLeft.y, botLeft.z, 0, img.height);
+
+        endShape();
+        popMatrix();
       }
-
-      // line from left
-      if (j != 0) {
-        line(
-          pos[i][j - 1].x, pos[i][j - 1].y, pos[i][j - 1].z,
-          pos[i][j].x, pos[i][j].y, pos[i][j].z
-        );
-      }
-
-      // draw node
-      translate(pos[i][j].x, pos[i][j].y, pos[i][j].z);
-      sphere(radius);
-
-      popMatrix();
     }
   }
 
+  fill(255, 0, 0);
   // draw obstacle
   pushMatrix();
   translate(obstaclePosition.x, obstaclePosition.y, obstaclePosition.z);
-  lights();
   sphere(obstacleRadius);
   popMatrix();
 
@@ -268,48 +249,37 @@ void keyReleased() {
   if (key == 'k') {
     obstacleVelocity.y = 0;
   }
-  if (key == 'x') {
-    cameraTransX += 50;
-  }
-  if (key == 'y') {
-    cameraTransY += 50;
-  }
-  if (key == 'z') {
-    cameraTransZ += 50;
-  }
-  if (key == 'b') {
-    cameraTransX -= 50;
-  }
-  if (key == 'n') {
-    cameraTransY -= 50;
-  }
-  if (key == 'm') {
-    cameraTransZ -= 50;
-  }
-  println(cameraTransX, cameraTransY, cameraTransZ);
 }
 
-void mousePressed() {
-  dragCamera = true;
-  clickX = mouseX;
-  clickY = mouseY;
-
-  // float thresh = 10;
-  // for (int i = 0; i < rows; i++) {
-  //   for (int j = 0; j < cols; j++) {
-  //     if (abs(mouseX - pos[i][j].x) < thresh && abs(mouseY - pos[i][j].y) < thresh) {
-  //       dragIdx = i * cols + j;
-  //       dragging = true;
-  //       break;
-  //     }
-  //   }
-  // }
+Vec3 getNormal(int i, int j) {
+  if (i != 0 && j != 0) {
+    return cross(pos[i][j].minus(pos[i - 1][j]), pos[i][j - 1].minus(pos[i][j])).normalized();
+  }
+  if (i == 0 && j == 0) {
+    return cross(pos[i][j].minus(pos[i + 1][j]), pos[i][j + 1].minus(pos[i][j])).normalized();
+  }
+  if (i == 0) {
+    return cross(pos[i + 1][j].minus(pos[i][j]), pos[i][j - 1].minus(pos[i][j])).normalized();
+  }
+  if (j == 0) {
+    return cross(pos[i][j].minus(pos[i - 1][j]), pos[i][j].minus(pos[i][j + 1])).normalized();
+  }
+  return null;
 }
 
-void mouseReleased() {
-  dragCamera = false;
-  xRotation = xRotation + addXRotation;
-  addXRotation = 0;
-  yRotation = yRotation + addYRotation;
-  addYRotation = 0;
+float getTTC(Vec3 vel, Vec3 pos) {
+  float a = vel.lengthSqr();
+  float b = dot(vel.times(2), pos.minus(obstaclePosition));
+  float c = pos.minus(obstaclePosition).lengthSqr() - obstacleRadius * obstacleRadius;
+  float disc = sqrt(b * b - 4 * a * c);
+  float t1 = (-b + disc) / (2 * a);
+  float t2 = (-b - disc) / (2 * a);
+  float ans = Float.MAX_VALUE;
+  if (t1 > 0) {
+    ans = min(ans, t1);
+  }
+  if (t2 > 0) {
+    ans = min(ans, t2);
+  }
+  return ans;
 }

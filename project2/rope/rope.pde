@@ -43,7 +43,7 @@ float restLen = 10;
 float mass = 1.0; //TRY-IT: How does changing mass affect resting length of the rope?
 float k = 200; //TRY-IT: How does changing k affect resting length of the rope?
 float kv = 30; //TRY-IT: How big can you make kv?
-Vec2 obstaclePosition = new Vec2(100, 300);
+Vec2 obstaclePosition = new Vec2(100, 200);
 float obstacleRadius = 50;
 float COR = 0.8;
 
@@ -124,8 +124,8 @@ boolean paused = true;
 void draw() {
   background(255,255,255);
   if (!paused) {
-    for (int i = 0; i < 40; i++) {
-      update(1/(10 * frameRate));
+    for (int i = 0; i < 20; i++) {
+      update(1/(20 * frameRate));
     }
   }
   fill(0,0,0);

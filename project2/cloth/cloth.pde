@@ -3,13 +3,16 @@ String WINDOW_TITLE = "Swinging cloth";
 Camera camera;
 Robot robot;
 import java.awt.Robot;
+PImage crosshair;
 
 void setup() {
   fullScreen(P3D);
+  // size(1792, 1120, P3D);
   surface.setTitle(WINDOW_TITLE);
   noStroke();
   noCursor();
   initScene();
+  crosshair = loadImage("crosshair.png");
   try {
     robot = new Robot();
   }
@@ -20,10 +23,11 @@ void setup() {
 }
 
 int numUpdatesPerDraw = 20;
-int rows = 10;
-int cols = 10;
-int radius = 5;
-float rest_len = 100;
+
+int rows = 20;
+int cols = 20;
+int radius = 20;
+float rest_len = 50;
 float k_s = 100; // spring constant
 float k_d = 80; // damping constant
 float friction = 0.5;
@@ -33,7 +37,8 @@ float startZ = 0;
 float dist_between_nodes = rest_len;
 Vec3 obstaclePosition = new Vec3(200, 600, -300);
 Vec3 obstacleVelocity = new Vec3(0, 0, 0);
-float obstacleRadius = 200;
+float obstacleRadius = 300;
+float obstacleDistFromCamera = 1500;
 float COR = 0.8;
 float gravity = 400;
 
@@ -56,9 +61,37 @@ void initScene(){
   }
 }
 
+void checkCollision() {
+  // collision detection and response
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+      float d = obstaclePosition.minus(pos[i][j]).length();
+
+      if (d < obstacleRadius + radius) {
+        Vec3 n = pos[i][j].minus(obstaclePosition);
+        Vec3 norm = n.normalized();
+        Vec3 bounce = norm.times(dot(vel[i][j], norm));
+        vel[i][j].subtract(bounce.times(1 + COR));
+        pos[i][j] = obstaclePosition.plus(norm.times(obstacleRadius + radius)).times(1.01);
+      }
+    }
+  }
+}
+
 void update(float dt){
+
   // update obstacle position
-  obstaclePosition.add(obstacleVelocity.times(dt));
+  if (mousePressed) {
+    obstaclePosition.x = camera.position.x + camera.forwardDir.x * obstacleDistFromCamera;
+
+    // make sure that obstacle doesn't go above xz plane
+    obstaclePosition.y = max(
+      camera.position.y + camera.forwardDir.y * obstacleDistFromCamera,
+      obstacleRadius + 500
+    );
+
+    obstaclePosition.z = camera.position.z + camera.forwardDir.z * obstacleDistFromCamera;
+  }
 
   // reset acceleration
   for (int i = 0; i < rows; i++) {
@@ -110,23 +143,7 @@ void update(float dt){
       // add "friction"
       acc[i][j].subtract(vel[i][j].times(friction));
       vel[i][j].add(acc[i][j].times(dt));
-
       pos[i][j].add(vel[i][j].times(dt));
-    }
-  }
-
-  // collision detection and response
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < cols; j++) {
-      float d = obstaclePosition.minus(pos[i][j]).length();
-
-      if (d < obstacleRadius + radius) {
-        Vec3 n = pos[i][j].minus(obstaclePosition);
-        Vec3 norm = n.normalized();
-        Vec3 bounce = norm.times(dot(vel[i][j], norm));
-        vel[i][j].subtract(bounce.times(1 + COR));
-        pos[i][j] = obstaclePosition.plus(norm.times(obstacleRadius + radius)).times(1.01);
-      }
     }
   }
 }
@@ -143,6 +160,7 @@ void draw() {
       update(1.0/(numUpdatesPerDraw * frameRate));
     }
   }
+  checkCollision();
 
   directionalLight(150, 250, 150, -40, 120, -200);
 
@@ -162,7 +180,7 @@ void draw() {
         
         pushMatrix();
         beginShape();
-        fill(0, 255, 255 * (abs(pos[i][j].minus(pos[i][j + 1]).length() - rest_len) / (rest_len * 0.5)));
+        fill(0, 255, 0);
 
         Vec3 topLeftNormal = getNormal(i, j);
         normal(topLeftNormal.x, topLeftNormal.y, topLeftNormal.z);
@@ -184,6 +202,7 @@ void draw() {
         popMatrix();
       }
     }
+
   }
 
   fill(255, 0, 0);
@@ -193,10 +212,47 @@ void draw() {
   sphere(obstacleRadius);
   popMatrix();
 
+  // draw cross hairs
+  hint(DISABLE_DEPTH_TEST); //draws on top of whatever is drawn on screen
+  camera(); //reset camera to default position, which conveniently lines up with the screen exactly
+  ortho(); //orthographic projection removes any need for the z axis
+
+  beginShape();
+  texture(crosshair);
+  // vertex( x, y, z, u, v) where u and v are the texture coordinates in pixels
+  float crosshairSize = 25;
+  vertex(
+    width / 2 - crosshairSize,
+    height / 2 - crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    0, 0
+  );
+  vertex(
+    width / 2 + crosshairSize,
+    height / 2 - crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    crosshair.width, 0
+  );
+  vertex(
+    width / 2 + crosshairSize,
+    height / 2 + crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    crosshair.width, crosshair.height
+  );
+  vertex(
+    width / 2 - crosshairSize,
+    height / 2 + crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    0, crosshair.height
+  );
+  endShape();
+  hint(ENABLE_DEPTH_TEST);
+
   if (paused)
     surface.setTitle(WINDOW_TITLE + " [PAUSED]");
   else
     surface.setTitle(WINDOW_TITLE + " "+ nf(frameRate,0,2) + "FPS");
+
 }
 
 void keyPressed(){

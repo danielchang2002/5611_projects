@@ -12,13 +12,10 @@ class Camera
     theta         = 0; // rotation around Y axis. Starts with forward direction as ( 0, 0, -1 )
     phi           = 0; // rotation around X axis. Starts with up direction as ( 0, 1, 0 )
     moveSpeed     = 500;
-    turnSpeed     = 1.57; // radians/sec
     
     // dont need to change these
     negativeMovement = new PVector( 0, 0, 0 );
     positiveMovement = new PVector( 0, 0, 0 );
-    negativeTurn     = new PVector( 0, 0 ); // .x for theta, .y for phi
-    positiveTurn     = new PVector( 0, 0 );
     fovy             = PI / 4;
     aspectRatio      = width / (float) height;
     nearPlane        = 0.1;
@@ -35,8 +32,8 @@ class Camera
       oldPhi = phi;
     }
     else {
-      theta = oldTheta - (mouseX - (width / 2.0)) / width;
-      phi = oldPhi - (mouseY - (height / 2.0)) / height;
+      theta = oldTheta - ((mouseX - (width / 2.0)) / width) * PI / 3;
+      phi = oldPhi - ((mouseY - (height / 2.0)) / height) * PI / 3;
     }
 
 
@@ -50,7 +47,7 @@ class Camera
     // except that their theta and phi are named opposite
     float t = theta + PI / 2;
     float p = phi + PI / 2;
-    PVector forwardDir = new PVector( sin( p ) * cos( t ),   cos( p ),   -sin( p ) * sin ( t ) );
+    forwardDir = new PVector( sin( p ) * cos( t ),   cos( p ),   -sin( p ) * sin ( t ) );
     PVector upDir      = new PVector( sin( phi ) * cos( t ), cos( phi ), -sin( t ) * sin( phi ) );
     PVector rightDir   = new PVector( cos( theta ), 0, -sin( theta ) );
     PVector velocity   = new PVector( negativeMovement.x + positiveMovement.x, negativeMovement.y + positiveMovement.y, negativeMovement.z + positiveMovement.z );
@@ -116,4 +113,5 @@ class Camera
   PVector positiveMovement;
   PVector negativeTurn;
   PVector positiveTurn;
+  PVector forwardDir;
 };

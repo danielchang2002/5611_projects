@@ -1,15 +1,25 @@
 // set constants
 String WINDOW_TITLE = "Swinging cloth";
-int WIDTH = 1200;
-int HEIGHT = 1000;
+Camera camera;
+Robot robot;
+import java.awt.Robot;
 
 void setup() {
-  size(1200, 1000, P3D);
+  fullScreen(P3D);
   surface.setTitle(WINDOW_TITLE);
   noStroke();
+  noCursor();
   initScene();
+  try {
+    robot = new Robot();
+  }
+  catch (Exception e) {
+    e.printStackTrace();
+  }
+  camera = new Camera();
 }
 
+int numUpdatesPerDraw = 20;
 int rows = 10;
 int cols = 10;
 int radius = 5;
@@ -44,10 +54,6 @@ void initScene(){
       acc[i][j] = new Vec3(0, 0, 0);
     }
   }
-
-  Vec3 middle = pos[0][cols / 2];
-  lookLocation = new Vec3(middle.x, middle.y + 500, middle.z);
-  updateCameraPosition();
 }
 
 void update(float dt){
@@ -128,23 +134,13 @@ void update(float dt){
 boolean paused = true;
 
 void draw() {
-  if (dragCamera) {
-    phi = oldPhi + ((mouseY - clickY) / HEIGHT) * PI / 2;
-    theta = oldTheta + ((mouseX - clickX) / WIDTH) * PI / 2;
-    updateCameraPosition();
-  }
-
-  camera(
-    cameraLocation.x, cameraLocation.y, cameraLocation.z, 
-    lookLocation.x, lookLocation.y, lookLocation.z,
-    0, 1, 0
-  );
+  camera.Update(1.0/(frameRate));
 
   background(255,255,255);
 
   if (!paused) {
-    for (int i = 0; i < 40; i++) {
-      update(1/(20 * frameRate));
+    for (int i = 0; i < numUpdatesPerDraw * 2; i++) {
+      update(1.0/(numUpdatesPerDraw * frameRate));
     }
   }
 
@@ -174,15 +170,15 @@ void draw() {
 
         Vec3 topRightNormal = getNormal(i, j + 1);
         normal(topRightNormal.x, topRightNormal.y, topRightNormal.z);
-        vertex(topRight.x, topRight.y, topRight.z, img.width, 0);
+        vertex(topRight.x, topRight.y, topRight.z, rest_len, 0);
 
         Vec3 botRightNormal = getNormal(i + 1, j + 1);
         normal(botRightNormal.x, botRightNormal.y, botRightNormal.z);
-        vertex(botRight.x, botRight.y, botRight.z, img.width, img.height);
+        vertex(botRight.x, botRight.y, botRight.z, rest_len, rest_len);
 
         Vec3 botLeftNormal = getNormal(i + 1, j);
         normal(botLeftNormal.x, botLeftNormal.y, botLeftNormal.z);
-        vertex(botLeft.x, botLeft.y, botLeft.z, 0, img.height);
+        vertex(botLeft.x, botLeft.y, botLeft.z, 0, rest_len);
 
         endShape();
         popMatrix();
@@ -204,51 +200,53 @@ void draw() {
 }
 
 void keyPressed(){
-  if (key == ' ') {
+  camera.HandleKeyPressed();
+  if (key == 'p') {
     paused = !paused;
   }
   if (key == 'r') {
     initScene();
   }
-  if (key == 'w') {
-    obstacleVelocity.z -= 100;
-  }
-  if (key == 'a') {
-    obstacleVelocity.x -= 100;
-  }
-  if (key == 's') {
-    obstacleVelocity.z += 100;
-  }
-  if (key == 'd') {
-    obstacleVelocity.x += 100;
-  }
-  if (key == 'j') {
-    obstacleVelocity.y += 100;
-  }
-  if (key == 'k') {
-    obstacleVelocity.y -= 100;
-  }
+  // if (key == 'w') {
+  //   obstacleVelocity.z -= 100;
+  // }
+  // if (key == 'a') {
+  //   obstacleVelocity.x -= 100;
+  // }
+  // if (key == 's') {
+  //   obstacleVelocity.z += 100;
+  // }
+  // if (key == 'd') {
+  //   obstacleVelocity.x += 100;
+  // }
+  // if (key == 'j') {
+  //   obstacleVelocity.y += 100;
+  // }
+  // if (key == 'k') {
+  //   obstacleVelocity.y -= 100;
+  // }
 }
 
 void keyReleased() {
-  if (key == 'w') {
-    obstacleVelocity.z = 0;
-  }
-  if (key == 'a') {
-    obstacleVelocity.x = 0;
-  }
-  if (key == 's') {
-    obstacleVelocity.z = 0;
-  }
-  if (key == 'd') {
-    obstacleVelocity.x = 0;
-  }
-  if (key == 'j') {
-    obstacleVelocity.y = 0;
-  }
-  if (key == 'k') {
-    obstacleVelocity.y = 0;
-  }
+  camera.HandleKeyReleased();
+  // if (key == 'w') {
+  //   obstacleVelocity.z = 0;
+  // }
+  // if (key == 'a') {
+  //   obstacleVelocity.x = 0;
+  // }
+  // if (key == 's') {
+  //   obstacleVelocity.z = 0;
+  // }
+  // if (key == 'd') {
+  //   obstacleVelocity.x = 0;
+  // }
+  // if (key == 'j') {
+  //   obstacleVelocity.y = 0;
+  // }
+  // if (key == 'k') {
+  //   obstacleVelocity.y = 0;
+  // }
 }
 
 Vec3 getNormal(int i, int j) {

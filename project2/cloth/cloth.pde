@@ -22,25 +22,25 @@ void setup() {
   camera = new Camera();
 }
 
-int numUpdatesPerDraw = 20;
+int numUpdatesPerDraw = 40;
 
-int rows = 20;
-int cols = 20;
+int rows = 60;
+int cols = 60;
 int radius = 20;
-float rest_len = 50;
-float k_s = 100; // spring constant
-float k_d = 80; // damping constant
+float rest_len = 5;
+float k_s = 1000; // spring constant
+float k_d = 400;
 float friction = 0.5;
 float startX = 100;
 float startY = 200;
 float startZ = 0;
 float dist_between_nodes = rest_len;
-Vec3 obstaclePosition = new Vec3(200, 600, -300);
+Vec3 obstaclePosition = new Vec3(500, 600, -200);
 Vec3 obstacleVelocity = new Vec3(0, 0, 0);
-float obstacleRadius = 300;
+float obstacleRadius = 200;
 float obstacleDistFromCamera = 1500;
-float COR = 0.8;
-float gravity = 400;
+float COR = 0.0;
+float gravity = 300;
 
 Vec3[][] pos = new Vec3[rows][cols];
 Vec3[][] vel = new Vec3[rows][cols];
@@ -78,7 +78,7 @@ void checkCollision() {
   }
 }
 
-void update(float dt){
+void update(float dt) {
 
   // update obstacle position
   if (mousePressed) {
@@ -178,28 +178,45 @@ void draw() {
         Vec3 botRight = pos[i + 1][j + 1];
 
         
+
+        // draw first triangle
         pushMatrix();
-        beginShape();
         fill(0, 255, 0);
+        beginShape();
 
         Vec3 topLeftNormal = getNormal(i, j);
         normal(topLeftNormal.x, topLeftNormal.y, topLeftNormal.z);
-        vertex(topLeft.x, topLeft.y, topLeft.z, 0, 0);
+        vertex(topLeft.x, topLeft.y, topLeft.z);
 
         Vec3 topRightNormal = getNormal(i, j + 1);
         normal(topRightNormal.x, topRightNormal.y, topRightNormal.z);
-        vertex(topRight.x, topRight.y, topRight.z, rest_len, 0);
+        vertex(topRight.x, topRight.y, topRight.z);
 
         Vec3 botRightNormal = getNormal(i + 1, j + 1);
         normal(botRightNormal.x, botRightNormal.y, botRightNormal.z);
-        vertex(botRight.x, botRight.y, botRight.z, rest_len, rest_len);
-
-        Vec3 botLeftNormal = getNormal(i + 1, j);
-        normal(botLeftNormal.x, botLeftNormal.y, botLeftNormal.z);
-        vertex(botLeft.x, botLeft.y, botLeft.z, 0, rest_len);
+        vertex(botRight.x, botRight.y, botRight.z);
 
         endShape();
         popMatrix();
+
+        // draw second
+        pushMatrix();
+        fill(0, 255, 0);
+        beginShape();
+
+        normal(botRightNormal.x, botRightNormal.y, botRightNormal.z);
+        vertex(botRight.x, botRight.y, botRight.z);
+
+        Vec3 botLeftNormal = getNormal(i + 1, j);
+        normal(botLeftNormal.x, botLeftNormal.y, botLeftNormal.z);
+        vertex(botLeft.x, botLeft.y, botLeft.z);
+
+        normal(topLeftNormal.x, topLeftNormal.y, topLeftNormal.z);
+        vertex(topLeft.x, topLeft.y, topLeft.z);
+
+        endShape();
+        popMatrix();
+
       }
     }
 
@@ -263,46 +280,10 @@ void keyPressed(){
   if (key == 'r') {
     initScene();
   }
-  // if (key == 'w') {
-  //   obstacleVelocity.z -= 100;
-  // }
-  // if (key == 'a') {
-  //   obstacleVelocity.x -= 100;
-  // }
-  // if (key == 's') {
-  //   obstacleVelocity.z += 100;
-  // }
-  // if (key == 'd') {
-  //   obstacleVelocity.x += 100;
-  // }
-  // if (key == 'j') {
-  //   obstacleVelocity.y += 100;
-  // }
-  // if (key == 'k') {
-  //   obstacleVelocity.y -= 100;
-  // }
 }
 
 void keyReleased() {
   camera.HandleKeyReleased();
-  // if (key == 'w') {
-  //   obstacleVelocity.z = 0;
-  // }
-  // if (key == 'a') {
-  //   obstacleVelocity.x = 0;
-  // }
-  // if (key == 's') {
-  //   obstacleVelocity.z = 0;
-  // }
-  // if (key == 'd') {
-  //   obstacleVelocity.x = 0;
-  // }
-  // if (key == 'j') {
-  //   obstacleVelocity.y = 0;
-  // }
-  // if (key == 'k') {
-  //   obstacleVelocity.y = 0;
-  // }
 }
 
 Vec3 getNormal(int i, int j) {
@@ -329,7 +310,7 @@ float getTTC(Vec3 vel, Vec3 pos) {
   float t1 = (-b + disc) / (2 * a);
   float t2 = (-b - disc) / (2 * a);
   float ans = Float.MAX_VALUE;
-  if (t1 > 0) {
+  if (t1 < 0) {
     ans = min(ans, t1);
   }
   if (t2 > 0) {

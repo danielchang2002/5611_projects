@@ -6,11 +6,11 @@ class Camera
   Camera()
   {
     // position      = new PVector( 1522, -307, 928 ); // initial position
-    // theta         = 0.7; // rotation around Y axis. Starts with forward direction as ( 0, 0, -1 )
-    // phi           = -0.41; // rotation around X axis. Starts with up direction as ( 0, 1, 0 )
-    position      = new PVector(0, 0, 0); // initial position
-    theta         = 0; // rotation around Y axis. Starts with forward direction as ( 0, 0, -1 )
-    phi           = 0; // rotation around X axis. Starts with up direction as ( 0, 1, 0 )
+    position      = new PVector(641, -135, 293); // initial position
+    theta         = 0.719; // rotation around Y axis. Starts with forward direction as ( 0, 0, -1 )
+    phi           = -0.61; // rotation around X axis. Starts with up direction as ( 0, 1, 0 )
+    oldTheta = theta;
+    oldPhi = phi;
     moveSpeed     = 500;
     
     // dont need to change these

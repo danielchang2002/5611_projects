@@ -1,10 +1,20 @@
+import java.awt.Robot;
+PImage crosshair;
+Camera camera;
+Robot robot;
+
 String WINDOW_TITLE = "Shallow Water";
 
-int cells = 40;
-float dx = width / (cells * 1.0);
-int numUpdatesPerDraw = 100;
+int cells = 60;
+
+float water_width = 500;
+float water_height = 300;
+float water_depth = 500;
+
+float dx = water_width / (cells * 1.0);
+int numUpdatesPerDraw = 20;
 float g = 1;
-float damp = 0.9;
+float damp = 0.1;
 
 float[] h = new float[cells];
 float[] hu = new float[cells];
@@ -16,16 +26,34 @@ float[] hu_mid = new float[cells];
 float[] dhdt_mid = new float[cells];
 float[] dhudt_mid = new float[cells];
 
+float[] hu2 = new float[cells];
+float[] dhdt2 = new float[cells];
+float[] dhudt2 = new float[cells];
+float[] h_mid2 = new float[cells];
+float[] hu_mid2 = new float[cells];
+float[] dhdt_mid2 = new float[cells];
+float[] dhudt_mid2 = new float[cells];
+
 
 void setup() {
-  size(1792, 1120, P2D);
+  size(1792, 1120, P3D);
+  // fullScreen(P3D);
   surface.setTitle(WINDOW_TITLE);
+  noCursor();
   initScene();
+  crosshair = loadImage("crosshair.png");
+  try {
+    robot = new Robot();
+  }
+  catch (Exception e) {
+    e.printStackTrace();
+  }
+  camera = new Camera();
 }
 
 void initScene() {
   for (int i = 0; i < cells; i++) {
-    h[i] = height / 2 + i * (height / 2) / cells;
+    h[i] = water_height / 2 + sin(i / 10.0) * (water_height / 8);
     hu[i] = 0;
     dhdt[i] = 0;
     dhudt[i] = 0;
@@ -33,6 +61,13 @@ void initScene() {
     hu_mid[i] = 0;
     dhdt_mid[i] = 0;
     dhudt_mid[i] = 0;
+    hu2[i] = 0;
+    dhdt2[i] = 0;
+    dhudt2[i] = 0;
+    h_mid2[i] = 0;
+    hu_mid2[i] = 0;
+    dhdt_mid2[i] = 0;
+    dhudt_mid2[i] = 0;
   }
 
 }
@@ -67,51 +102,171 @@ void update(float dt) {
     dhudt[i] = -(dhu2dx + 0.5 * dgh2dx);
   }
 
-  for (float test : dhdt) {
-    println(test);
-  }
-  println();
-
   for (int i = 0; i < cells; i++) {
     h[i] += damp * dhdt[i] * dt;
     hu[i] += damp * dhudt[i] * dt;
   }
 
+  // boundary conditions
   h[0] = h[1];
   h[cells - 1] = h[cells - 2];
   hu[0] = -hu[1];
   hu[cells - 1] = -hu[cells - 2];
-
-  for (float heih : h) {
-    println(heih);
-  }
-  println(count++);
-  println();
 }
 
 boolean paused = true;
 
 void draw() {
+  camera.Update(1.0/(frameRate));
   background(255,255,255);
   if (!paused) {
-    for (int i = 0; i < numUpdatesPerDraw; i++) {
+    for (int i = 0; i < 100 * numUpdatesPerDraw; i++) {
       update(1.0/(numUpdatesPerDraw * frameRate));
     }
   }
 
+  directionalLight(255, 255, 255, -100, 120, 100);
+
+  pushMatrix();
+  noFill();
+  stroke(0, 0, 0);
+  translate(water_width / 2, water_height / 2, water_depth / 2);
+  box(water_width, water_height, water_depth);
+  popMatrix();
+
   // draw water
   fill(0, 0, 255);
-  for (int i = 0; i < cells; i++) {
-    float waterHeight = h[i];
-    rect(i * width / (cells * 1.0), height - waterHeight, width / (cells * 1.0), waterHeight);
+  noStroke();
+  for (int i = 0; i < cells - 1; i++) {
+    float currWaterHeight = h[i];
+    float nextWaterHeight = h[i + 1];
+
+    Vec3 one = new Vec3(dx * i, currWaterHeight, water_depth);
+    Vec3 two = new Vec3(dx * (i + 1), nextWaterHeight, water_depth);
+    Vec3 three = new Vec3(dx * (i + 1), currWaterHeight, 0);
+
+    Vec3 a = two.minus(one);
+    Vec3 b = three.minus(two);
+
+    Vec3 n = cross(a, b);
+
+    pushMatrix();
+    beginShape();
+    normal(n.x, n.y, n.z);
+    vertex(dx * i, currWaterHeight, water_depth);
+    vertex(dx * (i + 1), nextWaterHeight, water_depth);
+    vertex(dx * (i + 1), nextWaterHeight, 0);
+    vertex(dx * i, currWaterHeight, 0);
+    endShape();
+    popMatrix();
+
+    // draw front
+    pushMatrix();
+    beginShape();
+    normal(0, 0, -1);
+    vertex(dx * i, currWaterHeight, water_depth);
+    vertex(dx * (i + 1), nextWaterHeight, water_depth);
+    vertex(dx * (i + 1), water_height, water_depth);
+    vertex(dx * i, water_height, water_depth);
+    endShape();
+    popMatrix();
+
+    // draw back
+    pushMatrix();
+    beginShape();
+    normal(0, 0, 1);
+    vertex(dx * i, currWaterHeight, 0);
+    vertex(dx * (i + 1), nextWaterHeight, 0);
+    vertex(dx * (i + 1), water_height, 0);
+    vertex(dx * i, water_height, 0);
+    endShape();
+    popMatrix();
   }
+
+    // draw left
+    pushMatrix();
+    beginShape();
+    normal(-1, 0, 0);
+    vertex(0, h[0], water_depth);
+    vertex(0, h[0], 0);
+    vertex(0, water_height, 0);
+    vertex(0, water_height, water_depth);
+    endShape();
+    popMatrix();
+
+    // draw right
+    pushMatrix();
+    beginShape();
+    normal(1, 0, 0);
+    vertex(dx * (cells - 1), h[cells - 1], water_depth);
+    vertex(dx * (cells - 1), h[cells - 1], 0);
+    vertex(dx * (cells - 1), water_height, 0);
+    vertex(dx * (cells - 1), water_height, water_depth);
+    endShape();
+    popMatrix();
+
+
+
+  if (paused)
+    surface.setTitle(WINDOW_TITLE + " [PAUSED]");
+  else
+    surface.setTitle(WINDOW_TITLE + " "+ nf(frameRate,0,2) + "FPS");
+
+  drawCrossHairs();
 }
 
-void keyPressed() {
+void keyPressed(){
+  camera.HandleKeyPressed();
   if (key == 'p') {
     paused = !paused;
   }
-  if (key == 'n') {
-    update(1/(frameRate * numUpdatesPerDraw));
+  if (key == 'r') {
+    initScene();
   }
+}
+
+void keyReleased() {
+  camera.HandleKeyReleased();
+}
+
+void drawCrossHairs() {
+
+  // draw cross hairs
+  hint(DISABLE_DEPTH_TEST); //draws on top of whatever is drawn on screen
+  camera(); //reset camera to default position, which conveniently lines up with the screen exactly
+  ortho(); //orthographic projection removes any need for the z axis
+
+  beginShape();
+  texture(crosshair);
+  // vertex( x, y, z, u, v) where u and v are the texture coordinates in pixels
+  float crosshairSize = 25;
+  vertex(
+    width / 2 - crosshairSize,
+    height / 2 - crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    0, 0
+  );
+  vertex(
+    width / 2 + crosshairSize,
+    height / 2 - crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    crosshair.width, 0
+  );
+  vertex(
+    width / 2 + crosshairSize,
+    height / 2 + crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    crosshair.width, crosshair.height
+  );
+  vertex(
+    width / 2 - crosshairSize,
+    height / 2 + crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    0, crosshair.height
+  );
+  endShape();
+  hint(ENABLE_DEPTH_TEST);
+
+
+
 }

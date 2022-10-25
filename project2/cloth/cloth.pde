@@ -1,8 +1,9 @@
+import java.awt.Robot;
+
 // set constants
 String WINDOW_TITLE = "Swinging cloth";
 Camera camera;
 Robot robot;
-import java.awt.Robot;
 PImage crosshair;
 PImage clothTexture;
 PShader nebula;
@@ -17,8 +18,8 @@ int rows = 50;
 int cols = 50;
 int radius = 10;
 float rest_len = 5;
-float rip_len = rest_len * 5;
-float k_s = 2000; // spring constant
+float rip_len = rest_len * 6;
+float k_s = 3000; // spring constant
 float k_d = 400;
 float friction = 0.5;
 float startX = 100;
@@ -39,8 +40,8 @@ boolean[][] ripped_vert;
 boolean[][] ripped_hor;
 
 void setup() {
-  // fullScreen(P3D);
-  size(1792, 1120, P3D);
+  fullScreen(P3D);
+  // size(1792, 1120, P3D);
   surface.setTitle(WINDOW_TITLE);
   noStroke();
   noCursor();
@@ -280,43 +281,7 @@ void draw() {
   shape(sphere);
   popMatrix();
 
-  // draw cross hairs
-  hint(DISABLE_DEPTH_TEST); //draws on top of whatever is drawn on screen
-  camera(); //reset camera to default position, which conveniently lines up with the screen exactly
-  ortho(); //orthographic projection removes any need for the z axis
-
-  beginShape();
-  texture(crosshair);
-  // vertex( x, y, z, u, v) where u and v are the texture coordinates in pixels
-  float crosshairSize = 25;
-  vertex(
-    width / 2 - crosshairSize,
-    height / 2 - crosshairSize,
-    // camera.position.z + camera.forwardDir.z * fromCamera, 
-    0, 0
-  );
-  vertex(
-    width / 2 + crosshairSize,
-    height / 2 - crosshairSize,
-    // camera.position.z + camera.forwardDir.z * fromCamera, 
-    crosshair.width, 0
-  );
-  vertex(
-    width / 2 + crosshairSize,
-    height / 2 + crosshairSize,
-    // camera.position.z + camera.forwardDir.z * fromCamera, 
-    crosshair.width, crosshair.height
-  );
-  vertex(
-    width / 2 - crosshairSize,
-    height / 2 + crosshairSize,
-    // camera.position.z + camera.forwardDir.z * fromCamera, 
-    0, crosshair.height
-  );
-  endShape();
-  hint(ENABLE_DEPTH_TEST);
-
-
+  drawCrossHairs();
   if (paused)
     surface.setTitle(WINDOW_TITLE + " [PAUSED]");
   else
@@ -354,19 +319,44 @@ Vec3 getNormal(int i, int j) {
   return null;
 }
 
-float getTTC(Vec3 vel, Vec3 pos) {
-  float a = vel.lengthSqr();
-  float b = dot(vel.times(2), pos.minus(obstaclePosition));
-  float c = pos.minus(obstaclePosition).lengthSqr() - obstacleRadius * obstacleRadius;
-  float disc = sqrt(b * b - 4 * a * c);
-  float t1 = (-b + disc) / (2 * a);
-  float t2 = (-b - disc) / (2 * a);
-  float ans = Float.MAX_VALUE;
-  if (t1 < 0) {
-    ans = min(ans, t1);
-  }
-  if (t2 > 0) {
-    ans = min(ans, t2);
-  }
-  return ans;
+void drawCrossHairs() {
+
+  // draw cross hairs
+  hint(DISABLE_DEPTH_TEST); //draws on top of whatever is drawn on screen
+  camera(); //reset camera to default position, which conveniently lines up with the screen exactly
+  ortho(); //orthographic projection removes any need for the z axis
+
+  beginShape();
+  texture(crosshair);
+  // vertex( x, y, z, u, v) where u and v are the texture coordinates in pixels
+  float crosshairSize = 25;
+  vertex(
+    width / 2 - crosshairSize,
+    height / 2 - crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    0, 0
+  );
+  vertex(
+    width / 2 + crosshairSize,
+    height / 2 - crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    crosshair.width, 0
+  );
+  vertex(
+    width / 2 + crosshairSize,
+    height / 2 + crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    crosshair.width, crosshair.height
+  );
+  vertex(
+    width / 2 - crosshairSize,
+    height / 2 + crosshairSize,
+    // camera.position.z + camera.forwardDir.z * fromCamera, 
+    0, crosshair.height
+  );
+  endShape();
+  hint(ENABLE_DEPTH_TEST);
+
+
+
 }

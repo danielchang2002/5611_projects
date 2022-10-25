@@ -26,15 +26,6 @@ float[] hu_mid = new float[cells];
 float[] dhdt_mid = new float[cells];
 float[] dhudt_mid = new float[cells];
 
-float[] hu2 = new float[cells];
-float[] dhdt2 = new float[cells];
-float[] dhudt2 = new float[cells];
-float[] h_mid2 = new float[cells];
-float[] hu_mid2 = new float[cells];
-float[] dhdt_mid2 = new float[cells];
-float[] dhudt_mid2 = new float[cells];
-
-
 void setup() {
   size(1792, 1120, P3D);
   // fullScreen(P3D);
@@ -61,15 +52,7 @@ void initScene() {
     hu_mid[i] = 0;
     dhdt_mid[i] = 0;
     dhudt_mid[i] = 0;
-    hu2[i] = 0;
-    dhdt2[i] = 0;
-    dhudt2[i] = 0;
-    h_mid2[i] = 0;
-    hu_mid2[i] = 0;
-    dhdt_mid2[i] = 0;
-    dhudt_mid2[i] = 0;
   }
-
 }
 
 void update(float dt) {

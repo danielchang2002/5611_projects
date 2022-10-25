@@ -1,6 +1,8 @@
 # CSCI 5611 Project 2: Physically-Based Animation with PDEs
 Author: Daniel Chang (chan1975)
 
+Click here for the code!
+
 ## Cloth simulation
 
 ### Features
@@ -14,9 +16,7 @@ Author: Daniel Chang (chan1975)
 - Ripping/tearing: the spherical object can occasionally cause tears in the cloth!
 
 ### Demo video
-
-https://www.youtube.com/watch?v=FkDdmKzh4CU&ab_channel=DanielChang
-
+Click [here](https://www.youtube.com/watch?v=FkDdmKzh4CU&ab_channel=DanielChang) to watch the demo video!
 
 ### Technologies used:
 - Processing (Java)

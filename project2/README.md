@@ -10,15 +10,12 @@ Author: Daniel Chang (chan1975)
   - WASD => move forward/backwards, left/right
   - mouse => move camera orientation
 - High quality rendering, using an earth sphere texture, a Goldy the Gopher cloth texture, and directional 3D lighting
+- User interaction: users can move the spherical object (earth) via mouse dragging
+- Ripping/tearing: the spherical object can occasionally cause tears in the cloth!
 
+### Demo video
 
-interaction with an obstacle 
-
-
-• A brief description of the features of your implementation and timestamp 
-of where they occur in your video(s). 
-• Code you wrote 
-
+https://www.youtube.com/watch?v=FkDdmKzh4CU&ab_channel=DanielChang
 
 
 ### Technologies used:

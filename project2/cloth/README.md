@@ -1,0 +1,1 @@
+Please run: processing-java --sketch=`pwd` --run

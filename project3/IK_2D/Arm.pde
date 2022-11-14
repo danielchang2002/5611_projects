@@ -11,7 +11,7 @@ class Arm extends Limb {
   }
 
   public void solve() {
-    solve(new Vec2(mouseX, mouseY));
+    solve(new Vec2(mouseX, mouseY), 0.1, false);
   }
 
 }

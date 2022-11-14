@@ -59,7 +59,7 @@ void setup(){
   angles[5] = 1.06;
   angles[6] = -0.637;
 
-  leg = new Leg(lengths, angles, new Vec2(width / 2 - mike_radius / 3, ground), ground, true);
+  leg = new Leg(lengths, angles, new Vec2(width / 2 - mike_radius / 3, ground), ground, false);
 }
 
 void draw_limb(Limb limb) {

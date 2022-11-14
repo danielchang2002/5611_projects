@@ -19,7 +19,7 @@ class Limb {
     this.switch_x = false;
   }
 
-  public void solve(Vec2 goal) {
+  public void solve(Vec2 goal, float drag, boolean cap_acc) {
     Vec2 startToGoal, startToEndEffector;
     float dotProd, angleDiff;
 
@@ -29,11 +29,11 @@ class Limb {
       dotProd = dot(startToGoal.normalized(), startToEndEffector.normalized());
       dotProd = clamp(dotProd, -1, 1);
       angleDiff = acos(dotProd);
-      if (abs(angleDiff) > acc_cap) {
+      if (cap_acc && abs(angleDiff) > acc_cap) {
         angleDiff = angleDiff < 0 ? -acc_cap : acc_cap;
       }
       if (cross(startToGoal, startToEndEffector) < 0) {
-        this.angles[i] += angleDiff;
+        this.angles[i] += drag * angleDiff;
       }
       else {
         this.angles[i] -= angleDiff;

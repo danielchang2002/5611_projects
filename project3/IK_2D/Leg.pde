@@ -25,8 +25,7 @@ class Leg extends Limb {
 
   public void solve() {
     if (frozen) return;
-    solve(new Vec2(goal_x, goal_y));
-    // solve(new Vec2(mouseX, mouseY));
+    solve(new Vec2(goal_x, goal_y), 1, true);
   }
 
   public void switch_roots() {

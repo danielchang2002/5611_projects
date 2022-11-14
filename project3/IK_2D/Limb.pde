@@ -29,12 +29,18 @@ class Limb {
       dotProd = dot(startToGoal.normalized(), startToEndEffector.normalized());
       dotProd = clamp(dotProd, -1, 1);
       angleDiff = acos(dotProd);
+      if (abs(angleDiff) > acc_cap) {
+        angleDiff = angleDiff < 0 ? -acc_cap : acc_cap;
+      }
       if (cross(startToGoal, startToEndEffector) < 0) {
-        this.angles[i] += 0.1 * angleDiff;
+        this.angles[i] += angleDiff;
       }
       else {
-        this.angles[i] -= 0.1 * angleDiff;
+        this.angles[i] -= angleDiff;
       }
+      // if (i == 0) {
+      //   this.angles[i] = PI / 2;
+      // }
 
       fk();
     }

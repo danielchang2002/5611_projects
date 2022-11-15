@@ -22,6 +22,11 @@ class Limb {
   }
 
   public void solve(Vec2 goal, float drag, boolean cap_acc) {
+    if (random) {
+      solve_random(goal, drag, cap_acc);
+      return;
+    }
+
     Vec2 startToGoal, startToEndEffector;
     float dotProd, angleDiff;
 
@@ -55,6 +60,34 @@ class Limb {
       }
       this.points[i] = (new Vec2(cos(angle) * this.lengths[i - 1], sin(angle) * this.lengths[i - 1])).plus(this.points[i - 1]);
     }
+  }
+
+  public void solve_random(Vec2 goal, float drag, boolean cap_acc) {
+    int NUM_ITERS = 10000;
+
+    float[] best_angles = this.angles;
+    float min_dist = this.ee().minus(goal).length();
+
+    for (int i = 0; i < NUM_ITERS; i++) {
+      this.angles = new float[this.angles.length];
+      for (int j = 0; j < this.angles.length; j++) {
+        this.angles[j] = random(-2 * PI, 2 * PI);
+        float new_angle = random(-2 * PI, 2 * PI);
+        float angleDiff = new_angle - this.angles[j];
+        if (abs(angleDiff) > acc_cap) {
+          angleDiff = angleDiff < 0 ? -acc_cap : acc_cap;
+        }
+        this.angles[j] += drag * angleDiff;
+        clamp(this.angles[j], limits[j][0], limits[j][1]);
+      }
+      fk();
+      float cur_dist = this.ee().minus(goal).length();
+      if (cur_dist < min_dist) {
+        best_angles = this.angles;
+      };
+    }
+    this.angles = best_angles;
+    fk();
   }
 
   public Vec2 ee() {

@@ -25,8 +25,16 @@ class Leg extends Limb {
 
   public void solve() {
     if (frozen) return;
+    if (random) {
+      solve_random(new Vec2(goal_x, goal_y), 1, true);
+      return;
+    }
     solve(new Vec2(goal_x, goal_y), 1, true);
   }
+
+    public void solve_random(Vec2 goal, float drag, boolean cap_acc) {
+
+    }
 
   public void switch_roots() {
     float[] new_lengths = new float[lengths.length];

@@ -16,6 +16,8 @@ Vec2 sully_center;
 boolean grabbing = false;
 float grab_dist = 50;
 
+boolean random = false;
+
 PShape mike;
 PShape left_foot;
 PShape right_foot;

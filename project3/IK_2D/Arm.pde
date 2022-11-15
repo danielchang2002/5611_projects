@@ -6,8 +6,8 @@
 // Daniel Chang <chan1975@umn.edu>
 
 class Arm extends Limb {
-  public Arm(float[] lengths, float[] angles, Vec2 root) {
-    super(lengths, angles, root);
+  public Arm(float[] lengths, float[] angles, Vec2 root, float[][] limits) {
+    super(lengths, angles, root, limits);
   }
 
   public void solve() {

@@ -13,8 +13,8 @@ class Leg extends Limb {
   float goal_y;
   boolean switched;
 
-  public Leg(float[] lengths, float[] angles, Vec2 root, float ground, boolean frozen) {
-    super(lengths, angles, root);
+  public Leg(float[] lengths, float[] angles, Vec2 root, float ground, boolean frozen, float[][] limits) {
+    super(lengths, angles, root, limits);
     super.fk();
     this.ground = ground;
     this.frozen = frozen;

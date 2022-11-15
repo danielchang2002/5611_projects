@@ -10,13 +10,15 @@ class Limb {
   float[] angles;
   Vec2[] points;
   boolean switch_x;
+  float[][] limits;
 
-  public Limb(float[] lengths, float[] angles, Vec2 root) {
+  public Limb(float[] lengths, float[] angles, Vec2 root, float[][] limits) {
     this.lengths = lengths;
     this.angles = angles;
     this.points = new Vec2[lengths.length + 1];
     this.points[0] = root;
     this.switch_x = false;
+    this.limits = limits;
   }
 
   public void solve(Vec2 goal, float drag, boolean cap_acc) {
@@ -38,9 +40,8 @@ class Limb {
       else {
         this.angles[i] -= angleDiff;
       }
-      // if (i == 0) {
-      //   this.angles[i] = PI / 2;
-      // }
+
+      this.angles[i] = clamp(this.angles[i], limits[i][0], limits[i][1]);
 
       fk();
     }
@@ -54,6 +55,10 @@ class Limb {
       }
       this.points[i] = (new Vec2(cos(angle) * this.lengths[i - 1], sin(angle) * this.lengths[i - 1])).plus(this.points[i - 1]);
     }
+  }
+
+  public Vec2 ee() {
+    return this.points[this.points.length - 1];
   }
 
 }
